@@ -1,78 +1,81 @@
 import os
 import csv
+import time
 from playwright.sync_api import sync_playwright
+from playwright_stealth import stealth_sync
 
 def hunt_leads():
     query = os.getenv("SEARCH_QUERY", "HR Consultancy in Kolkata")
     
     with sync_playwright() as p:
+        # PROXY PLACEHOLDER: Uncomment the lines below if GitHub gets blocked
+        # proxy_settings = {
+        #     "server": "http://your-proxy-address:port",
+        #     "username": "your-username",
+        #     "password": "your-password"
+        # }
+        # browser = p.chromium.launch(headless=True, proxy=proxy_settings)
+        
         browser = p.chromium.launch(headless=True)
-        # Use a more realistic browser context
         context = browser.new_context(
-            viewport={'width': 1920, 'height': 1080},
+            viewport={'width': 1280, 'height': 800},
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
         )
         page = context.new_page()
+        stealth_sync(page)
         
-        print(f"Searching for: {query}")
-        search_url = f"http://googleusercontent.com/maps.google.com/5{query.replace(' ', '+')}"
-        page.goto(search_url)
+        print(f"Opening Google Maps for: {query}")
+        page.goto(f"https://www.google.com/maps/search/{query.replace(' ', '+')}")
         
-        # 1. Handle Google "Consent" or "I agree" buttons if they appear
+        # Handling the basic 'Accept all' cookie banner if it blocks the view
         try:
-            if page.get_by_role("button", name="Accept all").is_visible():
-                page.get_by_role("button", name="Accept all").click()
+            page.get_by_role("button", name="Accept all").click(timeout=3000)
         except:
             pass
 
-        page.wait_for_timeout(5000)
+        # Wait for the results panel to appear
+        page.wait_for_selector('div[role="feed"]', timeout=10000)
 
-        # 2. Force the sidebar to scroll to load listings
-        # We target the main scrollable container in the sidebar
+        # Scroll to load businesses
+        scrollable = page.locator('div[role="feed"]')
         for _ in range(3):
-            page.mouse.wheel(0, 4000)
-            page.wait_for_timeout(2000)
+            page.evaluate('(el) => el.scrollTop = el.scrollHeight', scrollable.element_handle())
+            time.sleep(2)
 
         leads = []
-        
-        # 3. Get all links that look like business listings
-        # Google Maps listings usually contain '/maps/place/' in the URL
-        listings = page.locator('a[href*="/maps/place/"]').all()
-        print(f"Found {len(listings)} potential listings...")
+        # Modern 2026 listing container selector
+        listings = page.locator('div[role="article"]').all()
+        print(f"Scanning {len(listings)} businesses...")
 
-        for listing in listings[:15]: # Check first 15
+        for listing in listings[:15]:
             try:
-                name = listing.get_attribute("aria-label")
-                if not name:
-                    continue
+                # Title selector (Current class used in 2026)
+                name_el = listing.locator('.qBF1Pd')
+                name = name_el.inner_text() if name_el.count() > 0 else "Unknown"
                 
-                listing.click()
-                page.wait_for_timeout(3000)
-
-                # 4. Logic: Check if Website button is MISSING
-                # Google uses 'authority' as the ID for the website link
-                has_website = page.locator('a[data-item-id="authority"]').is_visible()
+                # Logic: Is the website button missing?
+                # The authority data-item-id is the global marker for a website link
+                has_website = listing.locator('a[data-item-id="authority"]').count() > 0
                 
                 if not has_website:
-                    # Try to get phone number
+                    # Look for phone number text
                     phone = "N/A"
-                    phone_el = page.locator('button[data-item-id^="phone:tel"]').first
-                    if phone_el.is_visible():
+                    phone_el = listing.locator('span.Us79be').first
+                    if phone_el.count() > 0:
                         phone = phone_el.inner_text()
 
                     leads.append({"Name": name, "Phone": phone})
-                    print(f"✅ Lead Added: {name}")
-            except Exception as e:
-                print(f"Error checking listing: {e}")
+                    print(f"🎯 Target Found: {name}")
+            except:
                 continue
 
-        # Save results
+        # Write to CSV
         with open('leads.csv', 'w', newline='', encoding='utf-8') as f:
             writer = csv.DictWriter(f, fieldnames=["Name", "Phone"])
             writer.writeheader()
             writer.writerows(leads)
-            
-        print(f"Scrape complete. Total leads found: {len(leads)}")
+        
+        print(f"Scrape finished. {len(leads)} leads saved.")
         browser.close()
 
 if __name__ == "__main__":
