@@ -1,0 +1,36 @@
+name: Lead Hunter Bot
+
+on:
+  schedule:
+    - cron: '30 3 * * *' # 9:00 AM IST daily
+  workflow_dispatch: # Manual trigger button
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install playwright
+          playwright install chromium
+
+      - name: Run Scraper
+        env:
+          SEARCH_QUERY: "HR Consultancy in Kolkata"
+        run: python scraper.py
+
+      - name: Send Leads to Telegram
+        if: success()
+        run: |
+          curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+               -F document=@leads.csv \
+               -F caption="🎯 Fresh Leads Found! Here are the businesses in Kolkata without websites." \
+               https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
