@@ -1,3 +1,1 @@
 playwright
-playwright-extra
-puppeteer-extra-plugin-stealth
