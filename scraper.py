@@ -5,48 +5,58 @@ from playwright.sync_api import sync_playwright
 
 def hunt_leads():
     query = os.getenv("SEARCH_QUERY", "HR Consultancy in Kolkata")
-    kolkata_coords = "@22.5726,88.3639,13z"
-    # Using the native search path
-    search_url = f"https://www.google.com/maps/search/{query.replace(' ', '+')}/{kolkata_coords}"
+    kolkata_center = "@22.5726,88.3639,13z"
+    search_url = f"https://www.google.com/maps/search/{query.replace(' ', '+')}/{kolkata_center}"
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(viewport={'width': 1920, 'height': 1080})
         page = context.new_page()
         
-        print(f"🕵️ Hunter starting...")
+        print(f"🕵️ Hunter starting for: {query}")
         page.goto(search_url)
-        time.sleep(5) 
+        
+        # 1. Wait until the results actually appear
+        try:
+            page.wait_for_selector('div[role="article"]', timeout=30000)
+        except:
+            print("❌ Timeout: No results appeared. Check debug_view.png")
+            page.screenshot(path="debug_view.png")
+            browser.close()
+            return
 
-        # Scroll to load businesses
+        # 2. Scroll slowly to load metadata
         for _ in range(3):
-            page.mouse.wheel(0, 3000)
+            page.mouse.wheel(0, 2000)
             time.sleep(2)
 
         leads = []
+        # 3. Find all business containers
         listings = page.locator('div[role="article"]').all()
-        print(f"📋 Found {len(listings)} businesses. Running Deep-Filter...")
+        print(f"📋 Found {len(listings)} listings. Filtering...")
 
         for listing in listings:
             try:
                 name = listing.get_attribute("aria-label")
                 if not name: continue
 
-                # --- THE DEEP FILTER ---
-                # 1. Search for any text that says "Website"
-                # 2. Search for the globe icon (authority)
-                # 3. Search for any 'a' tag that has an 'aria-label' containing "Website"
+                # --- THE "OUTBOUND LINK" FILTER ---
+                # We find all <a> tags inside this specific listing
+                all_links = listing.locator('a').all()
+                has_external_site = False
                 
-                has_website_text = listing.get_by_text("Website", exact=False).count() > 0
-                has_website_id = listing.locator('a[data-item-id="authority"]').count() > 0
-                has_website_label = listing.locator('a[aria-label*="Website"]').count() > 0
-                
-                # If ANY of these are true, the business has a site.
-                if has_website_text or has_website_id or has_website_label:
-                    print(f"⏭️ Skipping {name} (Website Found)")
+                for link in all_links:
+                    href = link.get_attribute("href")
+                    if href and "http" in href and "google.com" not in href:
+                        # If a link exists that doesn't belong to Google, it's a website
+                        has_external_site = True
+                        break
+
+                if has_external_site:
+                    print(f"⏭️ Skipping {name} (External site found)")
                     continue
 
-                # If no website signs were found, it's a lead
+                # 4. If no external site found, it's a lead
                 phone = "N/A"
                 phone_el = listing.locator('span.Us79be').first
                 if phone_el.count() > 0:
@@ -58,15 +68,14 @@ def hunt_leads():
             except Exception:
                 continue
 
-        # Final check: Screenshot to see if the skip logic actually ran
-        page.screenshot(path="debug_view.png")
-        
+        # Save results
         with open('leads.csv', 'w', newline='', encoding='utf-8') as f:
             writer = csv.DictWriter(f, fieldnames=["Name", "Phone"])
             writer.writeheader()
             writer.writerows(leads)
         
-        print(f"✅ Scrape finished. {len(leads)} leads found.")
+        page.screenshot(path="debug_view.png")
+        print(f"✅ Done! Found {len(leads)} leads.")
         browser.close()
 
 if __name__ == "__main__":
