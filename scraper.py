@@ -5,53 +5,53 @@ from playwright.sync_api import sync_playwright
 
 def hunt_leads():
     query = os.getenv("SEARCH_QUERY", "HR Consultancy in Kolkata")
-    # Forces Google to center on Kolkata
-    search_url = f"https://www.google.com/maps/search/{query.replace(' ', '+')}/@22.5726,88.3639,13z"
+    kolkata_center = "@22.5726,88.3639,13z"
+    search_url = f"http://googleusercontent.com/maps.google.com/search?q={query.replace(' ', '+')}/{kolkata_center}"
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
-        context = browser.new_context(
-            viewport={'width': 1920, 'height': 1080},
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
-        )
+        context = browser.new_context(viewport={'width': 1920, 'height': 1080})
         page = context.new_page()
         
-        print(f"🕵️ Hunter starting for: {query}")
+        print(f"🕵️ Hunter focusing on Kolkata...")
         page.goto(search_url)
+        time.sleep(5) # Allow map to load
         
-        # Wait for the page to load
-        time.sleep(5)
-        
-        # 1. Take a debug screenshot
+        # Take the debug screenshot
         page.screenshot(path="debug_view.png")
-        print("📸 Screenshot captured as debug_view.png")
 
         leads = []
-        try:
-            # 2. Scroll the results panel
-            for _ in range(3):
-                page.mouse.wheel(0, 3000)
-                time.sleep(2)
+        # Find all business card containers
+        listings = page.locator('div[role="article"]').all()
 
-            # 3. Find listings
-            listings = page.locator('div[role="article"]').all()
-            print(f"📋 Found {len(listings)} listings. Filtering...")
-
-            for listing in listings[:10]:
+        for listing in listings[:10]:
+            try:
                 name = listing.get_attribute("aria-label")
                 if not name: continue
                 
-                # Check for website
+                # WEBSITE CHECK: If the 'Website' globe icon is MISSING
                 has_website = listing.locator('a[data-item-id="authority"]').count() > 0
                 
                 if not has_website:
-                    leads.append({"Name": name, "Phone": "Check Image"})
-                    print(f"🎯 Target Found: {name}")
+                    # CLICK to open the sidebar for the phone number
+                    listing.click()
+                    time.sleep(2) # Wait for sidebar
+                    
+                    phone = "No Phone Listed"
+                    # Google uses a button with a data-item-id that starts with 'phone:tel'
+                    phone_el = page.locator('button[data-item-id^="phone:tel"]').first
+                    if phone_el.is_visible():
+                        phone = phone_el.get_attribute("data-item-id").replace("phone:tel:", "")
 
-        except Exception as e:
-            print(f"❌ Error: {e}")
+                    leads.append({"Name": name, "Phone": phone})
+                    print(f"🎯 Lead Found: {name} | Phone: {phone}")
+                    
+                    # Optional: Press Escape to close sidebar and reset for next click
+                    page.keyboard.press("Escape")
+            except:
+                continue
 
-        # 4. Save results
+        # Save results
         with open('leads.csv', 'w', newline='', encoding='utf-8') as f:
             writer = csv.DictWriter(f, fieldnames=["Name", "Phone"])
             writer.writeheader()
