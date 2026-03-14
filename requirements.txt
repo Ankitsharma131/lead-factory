@@ -1,6 +1,3 @@
 playwright
-playwright-stealth
-fake-useragent
-python-dotenv
-# Optional but highly recommended:
-requests
+playwright-extra
+puppeteer-extra-plugin-stealth
