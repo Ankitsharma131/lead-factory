@@ -6,6 +6,7 @@ from playwright.sync_api import sync_playwright
 def hunt_leads():
     query = os.getenv("SEARCH_QUERY", "HR Consultancy in Kolkata")
     search_query = query.replace(' ', '+')
+    # Corrected URL structure
     search_url = f"https://www.google.com/maps/search/{search_query}/@22.5726,88.3639,13z"
 
     with sync_playwright() as p:
@@ -14,25 +15,34 @@ def hunt_leads():
         page = context.new_page()
         
         print(f"🕵️ Hunter starting for: {query}")
+        
+        # Go to the URL
         page.goto(search_url)
         
-        # 1. Wait for results to load
-        page.wait_for_load_state("networkidle")
-        time.sleep(5)
+        # 1. FIX: Wait for the results sidebar OR an article to appear
+        # We use a 15-second timeout and a specific selector instead of 'networkidle'
+        try:
+            page.wait_for_selector('div[role="article"]', timeout=15000)
+            print("✅ Results loaded successfully.")
+        except:
+            print("⚠️ Results didn't load in time, taking screenshot to see why...")
+            page.screenshot(path="debug_view.png")
+            # If it timed out, we still try to proceed
         
-        # Capture debug screenshot
+        time.sleep(2) # Final buffer for rendering
         page.screenshot(path="debug_view.png")
 
         leads = []
         try:
-            # 2. Scroll to populate list
-            scrollable = page.locator('div[role="feed"]')
-            if scrollable.count() > 0:
+            # 2. Find and Scroll
+            # We target the feed container to scroll
+            feed = page.locator('div[role="feed"]')
+            if feed.count() > 0:
                 for _ in range(3):
-                    page.mouse.wheel(0, 3000)
+                    feed.evaluate("el => el.scrollBy(0, 3000)")
                     time.sleep(2)
 
-            # 3. Find listings
+            # 3. Process listings
             listings = page.locator('div[role="article"]').all()
             print(f"📋 Found {len(listings)} listings. Filtering...")
 
@@ -44,7 +54,7 @@ def hunt_leads():
                 has_website = listing.locator('a[data-item-id="authority"]').count() > 0
                 
                 if not has_website:
-                    # Click and get phone
+                    # Click and grab phone from detail pane
                     listing.click()
                     time.sleep(2)
                     
@@ -54,13 +64,13 @@ def hunt_leads():
                         phone = phone_el.get_attribute("data-item-id").replace("phone:tel:", "")
 
                     leads.append({"Name": name, "Phone": phone})
-                    print(f"🎯 Found: {name} | Phone: {phone}")
+                    print(f"🎯 Lead: {name} | Phone: {phone}")
                     page.keyboard.press("Escape")
 
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"❌ Error during scan: {e}")
 
-        # 4. Save results
+        # 4. Save
         with open('leads.csv', 'w', newline='', encoding='utf-8') as f:
             writer = csv.DictWriter(f, fieldnames=["Name", "Phone"])
             writer.writeheader()
