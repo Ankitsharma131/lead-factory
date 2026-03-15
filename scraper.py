@@ -5,7 +5,6 @@ from playwright.sync_api import sync_playwright
 
 def hunt_leads():
     query = os.getenv("SEARCH_QUERY", "HR Consultancy in Kolkata")
-    # Using the coordinates we know work for Kolkata
     search_url = f"https://www.google.com/maps/search/{query.replace(' ', '+')}/@22.5726,88.3639,13z"
 
     with sync_playwright() as p:
@@ -13,49 +12,58 @@ def hunt_leads():
         context = browser.new_context(viewport={'width': 1920, 'height': 1080})
         page = context.new_page()
         
-        print(f"🕵️ Searching for: {query}")
+        print(f"🕵️ Hunter starting for: {query}")
         page.goto(search_url)
-        page.wait_for_selector('div[role="article"]', timeout=15000)
+        
+        try:
+            page.wait_for_selector('div[role="article"]', timeout=15000)
+        except:
+            print("❌ SKIP REASON: Page failed to load any business listings.")
+            browser.close()
+            return
 
-        # Scroll to load the list properly
-        for _ in range(3):
-            page.mouse.wheel(0, 3000)
-            time.sleep(2)
-
+        time.sleep(3)
         leads = []
         listings = page.locator('div[role="article"]').all()
 
-        for listing in listings[:20]:
+        for listing in listings[:15]:
             try:
                 name = listing.get_attribute("aria-label")
-                if not name: continue
+                if not name:
+                    print("⏩ SKIP REASON: Business name could not be read from aria-label.")
+                    continue
                 
-                # Check for the presence of a website link
-                # In your screenshot, businesses WITH sites have a specific link container
-                has_website = listing.locator('a[data-item-id="authority"]').count() > 0
+                # Check for website link in the list card
+                website_btn = listing.locator('a[data-item-id="authority"]')
                 
-                if not has_website:
-                    # CLICK to confirm it's actually missing (looking for "Add website")
-                    listing.click()
-                    time.sleep(2)
+                if website_btn.count() > 0:
+                    # REASON 1: Website already exists in the list view
+                    print(f"⏩ SKIP: {name} | REASON: Already has a 'Website' button in list view.")
+                    continue
+
+                # If no button, we deep-check the sidebar
+                listing.click()
+                time.sleep(2)
+
+                # Check for "Add website" text in the sidebar
+                add_website_visible = page.get_by_text("Add website").is_visible()
+                
+                if add_website_visible:
+                    # SUCCESS: Both checks passed
+                    phone = "N/A"
+                    phone_el = page.locator('button[data-item-id^="phone:tel"]').first
+                    if phone_el.is_visible():
+                        phone = phone_el.get_attribute("data-item-id").replace("phone:tel:", "")
                     
-                    # If the sidebar shows "Add website", it's 100% a lead
-                    add_website_btn = page.get_by_text("Add website")
-                    
-                    if add_website_btn.is_visible():
-                        print(f"🎯 GOLD MINE: {name} (Confirmed No Website)")
-                        
-                        # Get phone number from sidebar
-                        phone = "N/A"
-                        phone_el = page.locator('button[data-item-id^="phone:tel"]').first
-                        if phone_el.is_visible():
-                            phone = phone_el.get_attribute("data-item-id").replace("phone:tel:", "")
-                        
-                        leads.append({"Name": name, "Phone": phone})
-                        page.keyboard.press("Escape")
+                    leads.append({"Name": name, "Phone": phone})
+                    print(f"🎯 ADDED: {name} | REASON: No website button AND 'Add website' text found.")
                 else:
-                    print(f"⏩ Skipping {name} (Has Website)")
-            except:
+                    # REASON 2: No website button, but the sidebar doesn't offer "Add website"
+                    print(f"⏩ SKIP: {name} | REASON: No website button, but sidebar does NOT show 'Add website' text.")
+                
+                page.keyboard.press("Escape")
+            except Exception as e:
+                print(f"⏩ SKIP: Error processing listing | REASON: {str(e)}")
                 continue
 
         # Save to CSV
@@ -64,8 +72,7 @@ def hunt_leads():
             writer.writeheader()
             writer.writerows(leads)
         
-        page.screenshot(path="debug_view.png")
-        print(f"✅ Found {len(leads)} businesses that need a website.")
+        print(f"✅ FINAL REPORT: Scraped {len(leads)} leads into the CSV.")
         browser.close()
 
 if __name__ == "__main__":
