@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ name }} | Premium {{ category }} in Kolkata</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); }
+        .accent-text { color: #00ffcc; }
+        .bg-accent { background-color: #00ffcc; }
+        .hero-gradient { background: radial-gradient(circle at top right, #1a1a1a, #000000); }
+    </style>
+</head>
+<body class="bg-black text-zinc-100 font-sans selection:bg-cyan-500/30">
+
+    <nav class="p-8 flex justify-between items-center max-w-7xl mx-auto border-b border-white/5">
+        <div class="text-2xl font-black tracking-tighter uppercase italic">{{ name }}</div>
+        <div class="hidden md:flex gap-8 text-sm font-medium text-zinc-400">
+            <a href="#" class="hover:text-white">Services</a>
+            <a href="#" class="hover:text-white">Testimonials</a>
+            <a href="#" class="hover:text-white">Location</a>
+        </div>
+        <a href="tel:{{ phone }}" class="bg-accent text-black px-6 py-2.5 rounded-full font-bold text-sm hover:scale-105 transition shadow-[0_0_20px_rgba(0,255,204,0.3)]">Call {{ phone }}</a>
+    </nav>
+
+    <section class="relative pt-32 pb-20 px-6 hero-gradient overflow-hidden">
+        <div class="max-w-5xl mx-auto text-center relative z-10">
+            <div class="inline-block px-4 py-1.5 mb-6 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 text-xs font-bold uppercase tracking-widest">
+                Official Demo for {{ name }}
+            </div>
+            <h1 class="text-6xl md:text-8xl font-black mb-8 tracking-tight leading-none">
+                Elevating <span class="accent-text">{{ category }}</span> <br>in Kolkata.
+            </h1>
+            <p class="text-xl md:text-2xl text-zinc-400 mb-12 max-w-2xl mx-auto leading-relaxed">
+                Experience excellence at your doorstep. Operating from our prime location in <strong>{{ address }}</strong>, we provide world-class expertise tailored to your business needs.
+            </p>
+            <div class="flex flex-col md:flex-row gap-6 justify-center items-center">
+                <a href="tel:{{ phone }}" class="w-full md:w-auto bg-white text-black px-10 py-5 rounded-2xl font-black text-lg hover:bg-zinc-200 transition">Get a Consultation</a>
+                <a href="{{ maps_link }}" target="_blank" class="w-full md:w-auto glass px-10 py-5 rounded-2xl font-bold text-lg hover:bg-white/10 transition">📍 Find Us on Maps</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="max-w-7xl mx-auto px-6 py-24">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+            <div class="glass p-10 rounded-[2rem]">
+                <div class="text-4xl mb-6">🏆</div>
+                <h3 class="text-2xl font-bold mb-4">Market Leader</h3>
+                <p class="text-zinc-500 leading-relaxed text-lg">Recognized as a premier {{ category }} provider serving the greater Kolkata region with integrity.</p>
+            </div>
+            <div class="glass p-10 rounded-[2rem] border-cyan-500/20">
+                <div class="text-4xl mb-6 text-yellow-400">★ {{ rating }}</div>
+                <h3 class="text-2xl font-bold mb-4">Customer Rated</h3>
+                <p class="text-zinc-500 leading-relaxed text-lg">Maintaining high standards of service excellence as reflected in our Google Maps feedback.</p>
+            </div>
+            <div class="glass p-10 rounded-[2rem]">
+                <div class="text-4xl mb-6">🛡️</div>
+                <h3 class="text-2xl font-bold mb-4">Local Presence</h3>
+                <p class="text-zinc-500 leading-relaxed text-lg">Proudly rooted in {{ address }}. We understand the local market like no one else.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-24 px-6 border-t border-white/5">
+        <div class="max-w-4xl mx-auto glass p-16 rounded-[3rem] text-center border-cyan-500/10">
+            <h2 class="text-4xl font-bold mb-6">Ready to work with {{ name }}?</h2>
+            <p class="text-xl text-zinc-400 mb-10">Don't wait. Your business growth starts with a simple phone call.</p>
+            <a href="tel:{{ phone }}" class="text-4xl font-black accent-text hover:brightness-125 transition underline">{{ phone }}</a>
+        </div>
+    </section>
+
+    <footer class="py-12 text-center text-zinc-700 text-sm">
+        <p>&copy; 2026 {{ name }} | Kolkata, India</p>
+        <p class="mt-2 opacity-50 uppercase tracking-[0.2em] text-[10px]">Site Architecture by Ankit's Lead Factory</p>
+    </footer>
+
+</body>
+</html>
