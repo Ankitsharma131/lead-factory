@@ -1,74 +1,65 @@
-name: Lead Hunter Bot
+name: Lead Hunter & Architect Factory
 
 on:
   schedule:
-    - cron: '30 3 * * *' # Runs daily at 9:00 AM IST
-  workflow_dispatch: # Allows you to start it manually
+    - cron: '30 3 * * *' # Daily at 9:00 AM IST
+  workflow_dispatch:
+
+# Grant permissions for both writing history and deploying websites
+permissions:
+  contents: write
+  pages: write
+  id-token: write
 
 jobs:
-  run-master-hunter:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    
-    # CRITICAL: This allows the bot to save history.txt back to your repo
-    permissions:
-      contents: write 
-      
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Install Master Dependencies
+      - name: Install Dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install playwright playwright-stealth python-docx
+          pip install playwright playwright-stealth python-docx jinja2
           playwright install chromium
 
-      - name: Execute Master Scraper
+      - name: 1. The Hunt (Scraper)
         env:
           SEARCH_QUERY: "HR Consultancy in Kolkata"
         run: python scraper.py
 
-      - name: Save History to Repository
+      - name: 2. The Architect (Site Builder)
+        run: python architect.py
+
+      - name: 3. Commit History
         run: |
           git config --global user.name "LeadBot-Master"
           git config --global user.email "bot@github.com"
           git add history.txt
-          # Only commit if there are actual changes in history
-          git commit -m "chore: update leads history [skip ci]" || echo "No new history to save"
+          git commit -m "chore: update history [skip ci]" || echo "No changes"
           git push
 
-      - name: Deliver Artifacts to Telegram
+      - name: 4. Upload Demo Sites to Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './demos' # This uploads your generated sites
+
+      - name: 5. Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: 6. Send Report to Telegram
         if: always()
         run: |
-          # 1. Send the Master Excel Sheet (The Gold Mine)
+          # Send CSV and Doc as usual
           if [ -f leads.csv ]; then
             curl -s -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
                  -F document=@leads.csv \
-                 -F caption="🏆 MASTER LEAD LIST: Name, Phone, Address, Category, & Maps Link" \
+                 -F caption="🏆 Master Leads & Demos are Live!" \
                  https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
-          fi
-          
-          sleep 3
-
-          # 2. Send the Word Audit Report (The Reasoning)
-          if [ -f status_report.docx ]; then
-            curl -s -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-                 -F document=@status_report.docx \
-                 -F caption="📄 Detailed Audit Report: Success vs Skip Reasons" \
-                 https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
-          fi
-
-          sleep 3
-
-          # 3. Send the Debug Screenshot (The Visual Proof)
-          if [ -f debug_view.png ]; then
-            curl -s -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-                 -F photo=@debug_view.png \
-                 -F caption="📸 Final Browser View of the Search" \
-                 https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendPhoto
           fi
