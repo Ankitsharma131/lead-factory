@@ -2,12 +2,14 @@ name: Lead Hunter Bot
 
 on:
   schedule:
-    - cron: '30 3 * * *' # Daily at 9:00 AM IST
+    - cron: '30 3 * * *'
   workflow_dispatch:
 
 jobs:
   run-hunter:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Important for committing history
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -19,7 +21,6 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          python -m pip install --upgrade pip
           pip install -r requirements.txt
           playwright install chromium
 
@@ -28,29 +29,20 @@ jobs:
           SEARCH_QUERY: "HR Consultancy in Kolkata"
         run: python scraper.py
 
+      - name: Commit History
+        run: |
+          git config --global user.name "LeadBot-DevOps"
+          git config --global user.email "bot@github.com"
+          git add history.txt
+          git commit -m "chore: update leads history [skip ci]" || echo "No changes to commit"
+          git push
+
       - name: Send Report to Telegram
         if: always()
         run: |
-          # 1. Send the Word Doc Report
           if [ -f status_report.docx ]; then
             curl -s -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
                  -F document=@status_report.docx \
-                 -F caption="📄 Daily Hunter Report: Success & Skip Reasons" \
+                 -F caption="📄 Daily Report (New leads only)" \
                  https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
-          fi
-
-          # 2. Send CSV Data
-          if [ -f leads.csv ]; then
-            curl -s -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-                 -F document=@leads.csv \
-                 -F caption="📊 Raw Leads CSV" \
-                 https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
-          fi
-
-          # 3. Send Debug Screenshot
-          if [ -f debug_view.png ]; then
-            curl -s -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-                 -F photo=@debug_view.png \
-                 -F caption="📸 Browser Screenshot" \
-                 https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendPhoto
           fi
