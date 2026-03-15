@@ -1,121 +1,53 @@
+import csv
+import os
+import re
+from jinja2 import Template
 
-Recruitment Mantra HR Consultancy & Recruitment Agency | Job Placement Consultancy in Kolkata
-Metro HR Consultancy
-RAM - Resource & ManPower | Job Placement Consultancy in Kolkata | Best Recruitment Agency in Kolkata | Employment Agency
-Surana Equity Pvt Ltd
-HR GLOBAL SERVICES
-Flip Jobs HR Consultancy & manpower agency Kolkata - Best Job placement consultancy
-Virtue Sources LLP
-Recex - Your Reliable Employment Consultant & Recruitment Partner
-Dream Job Consultancy
-Planbee Strategy Consultants - Best HR agency in Kolkata
-B3-Brain Behind Brand HR Consultancy & Recruitment Agency In Kolkata for Corporate Companies
-Al-Hiraa Manpower Consultant - Elliot Road
-EXPOSER CONSULTING PVT.LTD.
-Radiance HR Services
-JustCruit
-Sunshine Placement Services
-The HR Dimensions
-Right Career HR Solutions Consultancy
-Qausayn Overseas Consultancy Pvt. Ltd
-Beston Global Recruitment Consultancy
-GLOBE CONSULTANT
-Hotel & Restaurant Manpower Agency - India's Best Hotel Job Consultancy in Kolkata
-UNIVERSAL CONSULTANCY SERVICES
-ONE POINT CONSULTANCY SERVICES
-ADS HR Consultancy Pvt Ltd
-HBR
-Zedpoint Plus Human Resource Consultancy LLP
-EPACC Laketown
-Way To Work The Management Consultant
-Success Partner Consultants Private Limited
-The Origin
-Talent Outsourcing Job Consultancy
-HR Spot
-JobCirkit (NewDay Hr Solution)
-Core Careers Pvt. Ltd.
-i4best HR Training Institute
-The INSTINCT
-HRing Consultancy Services
-RIGHT CHOICE Placement Consultancy
-Easy Job
-HRing Consultancy Services
-RIGHT CHOICE Placement Consultancy
-Easy Job
-IDEAL CAREER ZONE @ Recruitment
-AA Placement - Gulf Job Consultant | Manpower Consultant in Kolkata
-ApexSAinternational Manpower Recruitment Consultancy
-Hiring Saathi
-NetQuo Services Pvt Ltd
-Yellowbox HR Services Ltd
-Gulf Jobs HR - Jobs In Dubai | Driver | Cook | Commi
-Goldman Consultants
-ONE ZONE HR -The best recruitment consultant & Manpower agency in Kolkata
-Global India Consultants
-Al-Hiraa Manpower Consultant - Salt Lake
-Al-Hiraa Manpower Consultant - Ripon Street
-Premier Management Consultants
-Shivaaksha HR Services Pvt. Ltd
-SSI Management Consultant
-Gateway Consultant
-You & I Consulting
-Genesis Group of Firms
-Randstad Kolkata - Recruitment Agency
-Career Path Solution – Employment Consultant & Job Provider in Kolkata
-HR Legal Consultancy
-GRIP Consultant
-Ascend HR Solutions Pvt. Ltd.
-HumaQuest Consulting India Pvt Ltd
-Cubic HR
-Ad Astra HR Consultants
-Career Navigator Consultancy Pvt. Ltd.
-Ideaspot Consultant
-Level Hiring
-Job Square Consultancy
-7 ORANGE MANPOWER CONSULTANCY
-IGNITIFY
-Gulf Recruitment Consultant
-Universal Consultant & Management Services
-Talent Bridge Consultancy Services, Nursing Jobs, The best Medical Job Placement, Engineering, Multimedia Placement Agency
-PROHR Strategies Pvt Ltd
-QUEST SERVICES AND CONSULTANTS PVT. LTD.
-Turning Point Manpower Consultants (P) Ltd.
-Talents Villa Staffing Solution Pvt Ltd.
-APRA PRAGATI SERVICES
-Talent Hub Jobs
-PRIMAS CAREER MANAGEMENT CONSULTANTS LLP
-Adecco India Private Limited
-Vishnu HR Solution
-123 Consultants
-Blue Core Services & Co.
-Yes Tech Solutions Inc - YTS Jobs
-KADMAN
-ABC Consultants
-Adeo Consultancy
-Job Placement
-Career Comfort - Best Job Consultancy and Recruitment Agency | Job For Freshers | Employment Consultancy | Kolkata, Bengaluru
-EliteRecruitments | Recruitment Agency In Kolkata
-Srijee HR Consultant
-Career Line Placement & Consultants
-Excel Jobs
-i3 HR Technologies Pvt Ltd
-2COMS Consulting Pvt. Ltd.
-WebArt Consultancy and Services
-Insta Solutions
-MPR CONSULTANTS
-Career Comfort - Best Job Consultancy and Recruitment Agency | Job For Freshers | Employment Consultancy | Kolkata, Bengaluru
-Career Care Guide
-Adyan Consultants Pvt. Ltd
-Innovsource Services Private Limited
-Jojo internationals
-TTS Recruiters HR Consultant Pvt Ltd
-Adecco India
-Hammad Gulf Jobs - Hotel Management | Kitchen Helper Jobs | Service Crew Jobs
-Peopledeck Professionals Pvt. Ltd.
-The Career Line
-RT NETWORK SOLUTIONS PVT LTD
-GNK E Services Pvt Ltd
-Team HR
-PS Digitech HR (India) Pvt Ltd
-Suvidha Placements Limited
-Pan Hr Solutions Private Limited
+def slugify(text):
+    text = text.lower()
+    text = re.sub(r'[^\w\s-]', '', text)
+    return re.sub(r'[-\s]+', '-', text).strip('-')
+
+def get_image_for_category(category):
+    cat = category.lower()
+    # Unsplash Image IDs
+    images = {
+        "hr": "1521731978142-2e67a34ad7b1",
+        "consult": "1454165804606-c3d5fbc56fe5",
+        "tech": "1519389950473-47ba0277781c",
+        "office": "1497366216548-37526070297c"
+    }
+    if "hr" in cat or "recruit" in cat: return images["hr"]
+    if "consult" in cat: return images["consult"]
+    if "tech" in cat or "it" in cat: return images["tech"]
+    return images["office"]
+
+def build_demo_sites():
+    output_dir = 'demos'
+    if not os.path.exists(output_dir): os.makedirs(output_dir)
+
+    with open('template.html', 'r', encoding='utf-8') as f:
+        jinja_template = Template(f.read())
+
+    with open('leads.csv', mode='r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            file_slug = slugify(row['Name'])
+            img_id = get_image_for_category(row['Category'])
+            
+            rendered_html = jinja_template.render(
+                name=row['Name'],
+                phone=row['Phone'],
+                address=row['Address'],
+                category=row['Category'],
+                rating=row['Rating'],
+                maps_link=row['MapsLink'],
+                image_id=img_id # New variable for Unsplash
+            )
+
+            with open(os.path.join(output_dir, f"{file_slug}.html"), "w", encoding='utf-8') as sf:
+                sf.write(rendered_html)
+            print(f"✨ Enhanced build: {file_slug}.html")
+
+if __name__ == "__main__":
+    build_demo_sites()
