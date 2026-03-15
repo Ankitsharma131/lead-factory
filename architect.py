@@ -10,6 +10,20 @@ def slugify(text):
 
 def get_image_for_category(category):
     cat = category.lower()
+    # High-end Architectural & Business Photography
+    images = {
+        "hr": "1491433594111-1ef7e8f1bb8a", # High-end corporate lobby
+        "consultancy": "1486406146926-c627a92fb1ab", # Modern skyscraper/glass
+        "tech": "1485827404703-89b55fcc595e", # Futuristic office
+        "default": "1431540015161-0bf868a2d407" # Stylish workspace
+    }
+    if "hr" in cat or "recruit" in cat: return images["hr"]
+    if "consult" in cat: return images["consultancy"]
+    if "tech" in cat: return images["tech"]
+    return images["default"]
+
+def get_image_for_category(category):
+    cat = category.lower()
     # Unsplash Image IDs
     images = {
         "hr": "1521731978142-2e67a34ad7b1",
