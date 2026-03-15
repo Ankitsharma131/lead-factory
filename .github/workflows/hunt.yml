@@ -2,61 +2,55 @@ name: Lead Hunter Bot
 
 on:
   schedule:
-    - cron: '30 3 * * *' # Runs at 9:00 AM IST daily (3:30 AM UTC)
-  workflow_dispatch: # Allows manual trigger
+    - cron: '30 3 * * *' # Daily at 9:00 AM IST
+  workflow_dispatch:
 
 jobs:
-  scrape-and-send:
+  run-hunter:
     runs-on: ubuntu-latest
-    
     steps:
-      # 1. Essential: Pull your code into the runner
-      - name: Checkout Repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 2. Setup the Python environment
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-          cache: 'pip' # Speeds up subsequent runs
 
-      # 3. Install core tools and your custom requirements
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install playwright playwright-stealth
+          pip install -r requirements.txt
           playwright install chromium
 
-      # 4. Execute the "Hunter" script
-      - name: Run Hunter Scraper
+      - name: Run Hunter
         env:
           SEARCH_QUERY: "HR Consultancy in Kolkata"
         run: python scraper.py
 
-      # 5. Send results to Telegram with error handling
-      - name: Send Leads to Telegram
-        if: always() # Run even if scraping fails so we see the debug image
+      - name: Send Report to Telegram
+        if: always()
         run: |
-          # Send the CSV (Data)
+          # 1. Send the Word Doc Report
+          if [ -f status_report.docx ]; then
+            curl -s -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+                 -F document=@status_report.docx \
+                 -F caption="📄 Daily Hunter Report: Success & Skip Reasons" \
+                 https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
+          fi
+
+          # 2. Send CSV Data
           if [ -f leads.csv ]; then
             curl -s -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
                  -F document=@leads.csv \
-                 -F caption="📊 Fresh leads found in Kolkata!" \
+                 -F caption="📊 Raw Leads CSV" \
                  https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
-          else
-            echo "CSV not found, skipping..."
           fi
 
-          # Small delay to prevent Telegram rate-limiting/race conditions
-          sleep 3
-
-          # Send the Screenshot (Debug)
+          # 3. Send Debug Screenshot
           if [ -f debug_view.png ]; then
             curl -s -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
                  -F photo=@debug_view.png \
-                 -F caption="📸 Live view from the bot's browser." \
+                 -F caption="📸 Browser Screenshot" \
                  https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendPhoto
-          else
-            echo "Screenshot not found, check scraper logs."
           fi
