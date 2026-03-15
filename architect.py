@@ -4,62 +4,50 @@ import re
 from jinja2 import Template
 
 def slugify(text):
-    """Converts business names to URL-friendly filenames."""
     text = text.lower()
     text = re.sub(r'[^\w\s-]', '', text)
     return re.sub(r'[-\s]+', '-', text).strip('-')
 
+def get_image_for_category(category):
+    cat = category.lower()
+    # Unsplash Image IDs
+    images = {
+        "hr": "1521731978142-2e67a34ad7b1",
+        "consult": "1454165804606-c3d5fbc56fe5",
+        "tech": "1519389950473-47ba0277781c",
+        "office": "1497366216548-37526070297c"
+    }
+    if "hr" in cat or "recruit" in cat: return images["hr"]
+    if "consult" in cat: return images["consult"]
+    if "tech" in cat or "it" in cat: return images["tech"]
+    return images["office"]
+
 def build_demo_sites():
     output_dir = 'demos'
-    template_file = 'template.html'
-    csv_file = 'leads.csv'
+    if not os.path.exists(output_dir): os.makedirs(output_dir)
 
-    # Ensure output directory exists
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-        print(f"📁 Created directory: {output_dir}")
+    with open('template.html', 'r', encoding='utf-8') as f:
+        jinja_template = Template(f.read())
 
-    # Check if files exist
-    if not os.path.exists(template_file):
-        print(f"❌ Error: {template_file} not found!")
-        return
-    if not os.path.exists(csv_file):
-        print(f"❌ Error: {csv_file} not found! Run the Hunter first.")
-        return
-
-    # Load the template
-    with open(template_file, 'r', encoding='utf-8') as f:
-        html_template = f.read()
-    
-    jinja_template = Template(html_template)
-
-    # Process leads
-    count = 0
-    with open(csv_file, mode='r', encoding='utf-8') as f:
+    with open('leads.csv', mode='r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            # Generate a clean filename
             file_slug = slugify(row['Name'])
-            filename = f"{file_slug}.html"
+            img_id = get_image_for_category(row['Category'])
             
-            # Inject data into template
             rendered_html = jinja_template.render(
                 name=row['Name'],
                 phone=row['Phone'],
                 address=row['Address'],
                 category=row['Category'],
                 rating=row['Rating'],
-                maps_link=row['MapsLink']
+                maps_link=row['MapsLink'],
+                image_id=img_id # New variable for Unsplash
             )
 
-            # Save the personalized site
-            with open(os.path.join(output_dir, filename), "w", encoding='utf-8') as site_file:
-                site_file.write(rendered_html)
-            
-            print(f"🏗️ Architect built: {filename}")
-            count += 1
-
-    print(f"\n✅ Phase 2 Complete: {count} personalized websites are ready in the '{output_dir}/' folder.")
+            with open(os.path.join(output_dir, f"{file_slug}.html"), "w", encoding='utf-8') as sf:
+                sf.write(rendered_html)
+            print(f"✨ Enhanced build: {file_slug}.html")
 
 if __name__ == "__main__":
     build_demo_sites()
