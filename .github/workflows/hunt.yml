@@ -37,12 +37,33 @@ jobs:
           git commit -m "chore: update leads history [skip ci]" || echo "No changes to commit"
           git push
 
-      - name: Send Report to Telegram
+      - name: Send Report & CSV to Telegram
         if: always()
         run: |
+          # 1. Send the Word Doc Report (Reasons/Audit)
           if [ -f status_report.docx ]; then
             curl -s -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
                  -F document=@status_report.docx \
-                 -F caption="📄 Daily Report (New leads only)" \
+                 -F caption="📄 Daily Audit Report (Reasons)" \
                  https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
+          fi
+          
+          sleep 2
+
+          # 2. Send the Excel CSV (Pure Data for your Lead List)
+          if [ -f leads.csv ]; then
+            curl -s -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+                 -F document=@leads.csv \
+                 -F caption="📊 Leads Excel (Ready for Phase 2)" \
+                 https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
+          fi
+
+          sleep 2
+
+          # 3. Send the Debug Screenshot
+          if [ -f debug_view.png ]; then
+            curl -s -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+                 -F photo=@debug_view.png \
+                 -F caption="📸 Browser View" \
+                 https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendPhoto
           fi
