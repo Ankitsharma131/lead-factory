@@ -2,51 +2,61 @@ name: Lead Hunter Bot
 
 on:
   schedule:
-    - cron: '30 3 * * *' # 9:00 AM IST daily
-  workflow_dispatch: # Manual trigger button
+    - cron: '30 3 * * *' # Runs at 9:00 AM IST daily (3:30 AM UTC)
+  workflow_dispatch: # Allows manual trigger
 
 jobs:
-  scrape:
+  scrape-and-send:
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Checkout Code
+      # 1. Essential: Pull your code into the runner
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
+      # 2. Setup the Python environment
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+          cache: 'pip' # Speeds up subsequent runs
 
+      # 3. Install core tools and your custom requirements
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install playwright playwright-stealth
           playwright install chromium
 
-      - name: Run Scraper
+      # 4. Execute the "Hunter" script
+      - name: Run Hunter Scraper
         env:
           SEARCH_QUERY: "HR Consultancy in Kolkata"
         run: python scraper.py
 
-      - name: Send Leads & Screenshot to Telegram
-        if: always()
-        run: |
-          # Send the CSV file
-          curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-               -F document=@leads.csv \
-               -F caption="📊 Leads CSV File" \
-               https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
-          
-          # Send the Debug Screenshot
-          curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-               -F photo=@debug_view.png \
-               -F caption="📸 Live view of what the bot saw on Google Maps." \
-               https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendPhoto
-
+      # 5. Send results to Telegram with error handling
       - name: Send Leads to Telegram
-        if: success()
+        if: always() # Run even if scraping fails so we see the debug image
         run: |
-          curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-               -F document=@leads.csv \
-               -F caption="🎯 Fresh Leads Found! Here are the businesses in Kolkata without websites." \
-               https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
+          # Send the CSV (Data)
+          if [ -f leads.csv ]; then
+            curl -s -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+                 -F document=@leads.csv \
+                 -F caption="📊 Fresh leads found in Kolkata!" \
+                 https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
+          else
+            echo "CSV not found, skipping..."
+          fi
+
+          # Small delay to prevent Telegram rate-limiting/race conditions
+          sleep 3
+
+          # Send the Screenshot (Debug)
+          if [ -f debug_view.png ]; then
+            curl -s -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+                 -F photo=@debug_view.png \
+                 -F caption="📸 Live view from the bot's browser." \
+                 https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendPhoto
+          else
+            echo "Screenshot not found, check scraper logs."
+          fi
