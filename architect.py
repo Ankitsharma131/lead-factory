@@ -7,7 +7,20 @@ def slugify(text):
     text = text.lower()
     text = re.sub(r'[^\w\s-]', '', text)
     return re.sub(r'[-\s]+', '-', text).strip('-')
-
+    
+def get_image_for_category(category):
+    cat = category.lower()
+    # Premium Architectural IDs
+    images = {
+        "hr": "1497219098941-ef20ef4c2196",      # Corporate glass office
+        "consultancy": "1486406146926-c627a92fb1ab", # Night skyscraper
+        "tech": "1519389950473-47ba0277781c",          # High-end tech room
+        "default": "1497366216548-37526070297c"      # Minimal boardroom
+    }
+    if "hr" in cat or "recruit" in cat or "job" in cat: return images["hr"]
+    if "consult" in cat: return images["consultancy"]
+    if "tech" in cat or "it" in cat: return images["tech"]
+    return images["default"]
 def get_image_for_category(category):
     cat = category.lower()
     # High-end Architectural & Business Photography
