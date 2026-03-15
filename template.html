@@ -8,124 +8,137 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
         
-        :root { --accent: #10b981; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #030303; color: #fafafa; overflow-x: hidden; }
+        :root { --primary: #00f2fe; --secondary: #4facfe; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #000; color: #fff; overflow-x: hidden; }
 
-        /* Modern Mesh Gradient Background */
-        .mesh-bg {
+        /* Complex Animated Mesh Gradient */
+        .mesh-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
-            background: 
-                radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.15) 0px, transparent 50%);
+            background: radial-gradient(circle at 0% 0%, rgba(79, 172, 254, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 100% 100%, rgba(0, 242, 254, 0.1) 0%, transparent 50%);
+            filter: blur(80px);
         }
 
-        .glass-card {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        /* Glassmorphism Bento Cards */
+        .bento-card {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 2rem;
+            transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative; overflow: hidden;
         }
 
-        .glass-card:hover {
-            background: rgba(255, 255, 255, 0.06);
-            border-color: var(--accent);
-            transform: translateY(-10px) scale(1.02);
+        .bento-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(0, 242, 254, 0.3);
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
         }
 
-        .text-gradient {
-            background: linear-gradient(to right, #ffffff, #10b981);
+        /* Text Effects */
+        .gradient-text {
+            background: linear-gradient(135deg, #fff 0%, #4facfe 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        .reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s ease-out; }
+        /* Animation Classes */
+        .reveal { opacity: 0; transform: translateY(20px); transition: all 1s ease-out; }
         .reveal.active { opacity: 1; transform: translateY(0); }
 
-        .floating { animation: floating 3s ease-in-out infinite; }
-        @keyframes floating {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-15px); }
-            100% { transform: translateY(0px); }
+        .float { animation: float 6s ease-in-out infinite; }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
         }
+
+        .shimmer {
+            position: relative; overflow: hidden;
+        }
+        .shimmer::after {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.03), transparent);
+            transform: rotate(45deg); animation: shimmer 3s infinite;
+        }
+        @keyframes shimmer { 0% { transform: translateX(-100%) rotate(45deg); } 100% { transform: translateX(100%) rotate(45deg); } }
     </style>
 </head>
 <body>
-    <div class="mesh-bg"></div>
+    <div class="mesh-container"></div>
 
-    <nav class="sticky top-0 z-50 p-6 animate__animated animate__fadeInDown">
-        <div class="max-w-7xl mx-auto glass-card rounded-3xl p-4 px-8 flex justify-between items-center">
+    <nav class="p-6 sticky top-0 z-50 animate__animated animate__fadeIn">
+        <div class="max-w-6xl mx-auto bento-card p-4 px-8 flex justify-between items-center backdrop-blur-3xl">
             <div class="flex items-center gap-3">
-                <div class="p-2 bg-emerald-500 rounded-lg"><i data-lucide="sparkles" class="text-black w-5 h-5"></i></div>
-                <span class="text-xl font-extrabold tracking-tighter uppercase">{{ name }}</span>
+                <div class="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg shadow-lg"></div>
+                <span class="font-extrabold tracking-tight text-lg">{{ name }}</span>
             </div>
-            <a href="tel:{{ phone }}" class="bg-emerald-500 text-black px-6 py-2 rounded-xl font-bold text-sm hover:shadow-[0_0_20px_rgba(16,185,129,0.5)] transition-all">
-                Contact Now
-            </a>
+            <a href="tel:{{ phone }}" class="bg-white text-black px-6 py-2 rounded-xl font-bold text-sm hover:scale-105 transition">Secure Call</a>
         </div>
     </nav>
 
-    <section class="relative pt-16 pb-32 px-6">
-        <div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
-            <div class="animate__animated animate__fadeInLeft">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase mb-6">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    Verified {{ category }} in Kolkata
-                </div>
-                <h1 class="text-6xl md:text-8xl font-extrabold mb-8 tracking-tighter leading-tight">
-                    Premium <span class="text-gradient">Experience</span> 
-                </h1>
-                <p class="text-xl text-zinc-400 mb-12 max-w-lg leading-relaxed">
-                    Setting the standard for excellence. <strong>{{ name }}</strong> combines local insight with a global vision, located right at {{ address }}.
-                </p>
-                <div class="flex flex-wrap gap-4">
-                    <a href="tel:{{ phone }}" class="bg-white text-black px-10 py-5 rounded-2xl font-black text-lg hover:bg-emerald-500 transition-all">Call {{ phone }}</a>
-                    <a href="{{ maps_link }}" class="glass-card px-10 py-5 rounded-2xl font-bold flex items-center gap-2">
-                        <i data-lucide="map"></i> Visit Us
-                    </a>
-                </div>
+    <section class="max-w-7xl mx-auto px-6 pt-12 pb-24 grid lg:grid-cols-2 gap-16 items-center">
+        <div class="animate__animated animate__fadeInLeft">
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-widest mb-6">
+                <i data-lucide="crown" class="w-3 h-3"></i> Exclusive Audit for {{ name }}
             </div>
+            <h1 class="text-7xl md:text-9xl font-extrabold tracking-tighter leading-none mb-8">
+                The <span class="gradient-text">Elite</span> Standard.
+            </h1>
+            <p class="text-xl text-zinc-400 max-w-lg mb-12 leading-relaxed">
+                Elevating the {{ category }} landscape in Kolkata through precision and data-driven excellence. Experience the future of business.
+            </p>
+            <div class="flex gap-4">
+                <a href="tel:{{ phone }}" class="bg-blue-500 text-white px-10 py-5 rounded-2xl font-black text-lg hover:shadow-2xl hover:shadow-blue-500/40 transition-all">Start Project</a>
+                <a href="{{ maps_link }}" class="bento-card px-10 py-5 rounded-2xl font-bold text-lg flex items-center gap-3">
+                    <i data-lucide="map-pin"></i> View Hub
+                </a>
+            </div>
+        </div>
 
-            <div class="relative animate__animated animate__fadeInRight">
-                <div class="floating">
-                    <img src="https://images.unsplash.com/photo-{{ image_id }}?auto=format&fit=crop&q=80&w=1000" 
-                         class="rounded-[3rem] border border-white/10 shadow-2xl grayscale hover:grayscale-0 transition-all duration-1000 shadow-emerald-500/10">
-                </div>
-                <div class="absolute -bottom-6 -left-6 glass-card p-6 rounded-2xl animate__animated animate__bounceIn animate__delay-1s">
-                    <div class="flex items-center gap-4">
-                        <div class="text-4xl font-black text-emerald-400">{{ rating }}</div>
-                        <div class="text-xs uppercase tracking-widest text-zinc-500">Google<br>Rating</div>
+        <div class="relative float">
+            <div class="absolute -inset-20 bg-blue-500/20 blur-[100px] rounded-full"></div>
+            <img src="https://images.unsplash.com/photo-{{ image_id }}?auto=format&fit=crop&q=80&w=1200" 
+                 class="rounded-[3rem] border border-white/10 shadow-2xl relative z-10 brightness-90 hover:brightness-100 transition duration-700">
+            <div class="absolute -bottom-8 -left-8 bento-card p-6 z-20 animate__animated animate__bounceIn">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-blue-500 rounded-xl"><i data-lucide="star" class="text-white"></i></div>
+                    <div>
+                        <div class="text-2xl font-bold">{{ rating }} / 5</div>
+                        <div class="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Client Satisfaction</div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="max-w-7xl mx-auto px-6 py-20">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="glass-card p-10 rounded-[2.5rem] md:col-span-2 reveal">
-                <i data-lucide="award" class="text-emerald-500 w-12 h-12 mb-6"></i>
-                <h3 class="text-3xl font-bold mb-4 italic">Unmatched Authority</h3>
-                <p class="text-zinc-400 text-lg">As a leading {{ category }}, we provide bespoke solutions that drive actual results for our partners in Kolkata.</p>
+    <section class="max-w-7xl mx-auto px-6 py-24">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+            <div class="md:col-span-8 bento-card p-12 reveal shimmer">
+                <h3 class="text-4xl font-bold mb-6">Strategic {{ category }}</h3>
+                <p class="text-zinc-400 text-xl leading-relaxed">Headquartered in <strong>{{ address }}</strong>, we specialize in high-impact operations that redefine market benchmarks in Kolkata.</p>
             </div>
-            <div class="glass-card p-10 rounded-[2.5rem] reveal">
-                <i data-lucide="globe" class="text-emerald-500 w-12 h-12 mb-6"></i>
-                <h3 class="text-2xl font-bold mb-4">Prime Office</h3>
-                <p class="text-zinc-400 italic">{{ address }}</p>
+            <div class="md:col-span-4 bento-card p-12 reveal flex flex-col justify-center items-center text-center">
+                <div class="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mb-6">
+                    <i data-lucide="navigation" class="text-blue-400"></i>
+                </div>
+                <h4 class="text-lg font-bold">Local Expert</h4>
+                <p class="text-zinc-500 text-sm">Serving the Kolkata Region</p>
             </div>
         </div>
     </section>
 
-    <footer class="py-20 text-center">
-        <p class="text-[10px] uppercase tracking-[0.5em] text-zinc-600 font-bold">Generated exclusively for {{ name }}</p>
+    <footer class="py-20 text-center opacity-30 font-bold tracking-[1em] text-xs">
+        &copy; {{ name }} | EST 2026
     </footer>
 
     <script>
         lucide.createIcons();
-        const obs = new IntersectionObserver(es => {
-            es.forEach(e => { if(e.isIntersecting) e.target.classList.add('active'); });
-        });
+        const obs = new IntersectionObserver(es => es.forEach(e => {
+            if(e.isIntersecting) e.target.classList.add('active');
+        }), { threshold: 0.1 });
         document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
     </script>
 </body>
