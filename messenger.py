@@ -3,42 +3,49 @@ import os
 import re
 
 def slugify(text):
+    # Standard slugify for GitHub Pages URLs
     text = text.lower()
     text = re.sub(r'[^\w\s-]', '', text).strip()
     return re.sub(r'[-\s]+', '-', text)
 
 def generate_outreach():
     csv_file = 'leads.csv'
+    # REPLACE with your actual GitHub username and repo name
     github_base_url = "https://Ankitsharma131.github.io/lead-factory/"
-    
-    # We will save a formatted text for the shell script to read
     output_file = 'tg_messages.txt'
 
-    if not os.path.exists(csv_file): return
+    if not os.path.exists(csv_file):
+        print("❌ leads.csv not found!")
+        return
 
     with open(csv_file, mode='r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         with open(output_file, 'w', encoding='utf-8') as out:
+            count = 0
             for row in reader:
                 slug = slugify(row['Name'])
                 demo_url = f"{github_base_url}{slug}.html"
                 
-                # Format for WhatsApp
+                # Clean phone for WhatsApp Link
                 clean_phone = "".join(filter(str.isdigit, row['Phone']))
                 if not clean_phone.startswith("91") and len(clean_phone) == 10:
                     clean_phone = "91" + clean_phone
                 
-                # The "Ready-to-Forward" Pitch
-                tg_pitch = (
-                    f"🏢 *{row['Name']}*\n"
-                    f"📞 Contact: {row['Phone']}\n"
-                    f"📍 Location: {row['Address']}\n\n"
-                    f"*Your Pitch:*\n"
-                    f"Hi {row['Name']}, I built a modern digital concept for your office at {row['Address']}. Check it out here: {demo_url}\n\n"
-                    f"👉 [Click to WhatsApp](https://wa.me/{clean_phone}?text=Hi%20{row['Name'].replace(' ', '%20')},%20I%20built%20this%20for%20you:%20{demo_url})"
+                # Plain Text Message (Avoids Telegram Markdown Errors)
+                msg = (
+                    f"🏢 BUSINESS: {row['Name']}\n"
+                    f"📞 PHONE: {row['Phone']}\n"
+                    f"📍 LOC: {row['Address']}\n"
+                    f"⭐ RATING: {row['Rating']}\n\n"
+                    f"PITCH: Hi {row['Name']}, I built this demo for you: {demo_url}\n\n"
+                    f"WHATSAPP: https://wa.me/{clean_phone}?text=Hi"
                 )
-                # Using a unique separator for the shell script
-                out.write(tg_pitch + "---END---")
+                
+                # Write message followed by the unique separator
+                out.write(msg + "|||")
+                count += 1
+    
+    print(f"✅ Generated {count} pitches in {output_file}")
 
 if __name__ == "__main__":
     generate_outreach()
