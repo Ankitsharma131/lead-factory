@@ -26,7 +26,7 @@ def create_status_doc(results, summary):
     doc.save('status_report.docx')
 
 def hunt_leads():
-    query = os.getenv("SEARCH_QUERY", "HR Consultancy in Kolkata")
+    query = os.getenv("SEARCH_QUERY", "HR Consultancy in Delhi")
     search_url = f"https://www.google.com/maps/search/{query.replace(' ', '+')}/@22.5726,88.3639,13z"
     
     history_file = 'history.txt'
