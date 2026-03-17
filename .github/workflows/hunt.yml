@@ -2,8 +2,8 @@ name: Lead Factory Master Pipeline
 
 on:
   schedule:
-    - cron: '30 3 * * *' # 9:00 AM IST
-  workflow_dispatch: # Manual Trigger
+    - cron: '30 3 * * *'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -50,7 +50,7 @@ jobs:
           git commit -m "chore: sync history [skip ci]" || echo "No changes to commit"
           git push
 
-      - name: 🌐 Deploy Demo Sites to Pages
+      - name: 🌐 Upload Demos to GitHub Pages
         uses: actions/upload-pages-artifact@v3
         with:
           path: './demos'
