@@ -2,18 +2,19 @@ import os
 import requests
 import time
 
-def send_messages():
+def send_leads():
+    # GitHub automatically populates these from your Secrets
     token = os.getenv("TG_BOT_TOKEN")
     chat_id = os.getenv("TG_CHAT_ID")
     file_path = 'tg_messages.txt'
 
     if not os.path.exists(file_path):
-        print("⚠️ tg_messages.txt not found.")
+        print("⚠️ No messages found in tg_messages.txt. Skipping...")
         return
 
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
-        # Split by the unique separator we defined in messenger.py
+        # Splitting by the custom separator we used in messenger.py
         messages = content.split("|||")
 
     for msg in messages:
@@ -21,7 +22,7 @@ def send_messages():
         if not msg:
             continue
             
-        print(f"🚀 Sending: {msg.splitlines()[0]}") # Log the first line (Business Name)
+        print(f"📤 Attempting to send message for: {msg.splitlines()[0]}")
         
         url = f"https://api.telegram.org/bot{token}/sendMessage"
         payload = {
@@ -31,12 +32,16 @@ def send_messages():
         }
         
         try:
-            response = requests.post(url, data=payload)
-            if response.status_code != 200:
-                print(f"❌ Failed to send. Error: {response.text}")
-            time.sleep(1.5) # Avoid rate limiting
+            response = requests.post(url, data=payload, timeout=10)
+            if response.status_code == 200:
+                print("✅ Successfully sent.")
+            else:
+                print(f"❌ Failed: {response.status_code} - {response.text}")
+            
+            # Anti-spam delay
+            time.sleep(2) 
         except Exception as e:
             print(f"❌ Connection error: {e}")
 
 if __name__ == "__main__":
-    send_messages()
+    send_leads()
