@@ -36,12 +36,14 @@ jobs:
       - name: 2. The Architect (Site Builder)
         run: python architect.py
 
-      - name: 📱 Push Individual Leads to Telegram (Python Mode)
+      - name: 📱 Push Individual Leads to Telegram
         if: always()
         env:
           TG_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python send_telegram.py
+        run: |
+          pip install requests
+          python send_telegram.py
 
       - name: 3. Commit History
         run: |
