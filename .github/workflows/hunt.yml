@@ -1,18 +1,17 @@
-name: Lead Hunter & Architect Factory
+name: Lead Factory Master Pipeline
 
 on:
   schedule:
-    - cron: '30 3 * * *' # Daily at 9:00 AM IST
-  workflow_dispatch:
+    - cron: '30 3 * * *' # 9:00 AM IST
+  workflow_dispatch: # Manual Trigger
 
-# Grant permissions for both writing history and deploying websites
 permissions:
   contents: write
   pages: write
   id-token: write
 
 jobs:
-  build-and-deploy:
+  factory-run:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -23,73 +22,52 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install Dependencies
+      - name: Install All Dependencies
         run: |
-          pip install playwright playwright-stealth python-docx jinja2
+          python -m pip install --upgrade pip
+          pip install playwright playwright-stealth python-docx jinja2 requests
           playwright install chromium
 
-      - name: 1. The Hunt (Scraper)
+      - name: 🔥 Phase 1: The Hunt
         env:
           SEARCH_QUERY: "HR Consultancy in Kolkata"
         run: python scraper.py
 
-      - name: 2. The Architect (Site Builder)
+      - name: 🏗️ Phase 2: The Architect
         run: python architect.py
 
-      - name: 📱 Push Individual Leads to Telegram
-        if: always()
+      - name: ✉️ Phase 3: The Messenger
         env:
           TG_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          pip install requests
-          python send_telegram.py
+        run: python messenger.py
 
-      - name: 3. Commit History
+      - name: 💾 Commit History Updates
         run: |
           git config --global user.name "LeadBot-Master"
           git config --global user.email "bot@github.com"
           git add history.txt
-          git commit -m "chore: update history [skip ci]" || echo "No changes"
+          git commit -m "chore: sync history [skip ci]" || echo "No changes to commit"
           git push
 
-      - name: 📱 Push Individual Leads to Telegram
+      - name: 🌐 Deploy Demo Sites to Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './demos'
+
+      - name: 🚀 Finalize Web Deployment
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: 📊 Daily Data Backup
         if: always()
         env:
           TG_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          if [ -f tg_messages.txt ]; then
-            # Set internal field separator to our custom end tag
-            IFS='---END---'
-            while read -d '---END---' message; do
-              if [ ! -z "$message" ]; then
-                curl -s -X POST "https://api.telegram.org/bot$TG_BOT_TOKEN/sendMessage" \
-                     -d "chat_id=$TG_CHAT_ID" \
-                     -d "text=$message" \
-                     -d "parse_mode=Markdown" \
-                     -d "disable_web_page_preview=false"
-                sleep 2 # Prevent Telegram rate limiting
-              fi
-            done < tg_messages.txt
-          fi
-      
-      - name: 4. Upload Demo Sites to Pages
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: './demos' # This uploads your generated sites
-
-      - name: 5. Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-
-      - name: 6. Send Report to Telegram
-        if: always()
-        run: |
-          # Send CSV and Doc as usual
           if [ -f leads.csv ]; then
-            curl -s -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            curl -s -F chat_id=$TG_CHAT_ID \
                  -F document=@leads.csv \
-                 -F caption="🏆 Master Leads & Demos are Live!" \
-                 https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
+                 -F caption="📊 Master Leads Backup (CSV)" \
+                 https://api.telegram.org/bot$TG_BOT_TOKEN/sendDocument
           fi
