@@ -2,3 +2,4 @@ playwright
 playwright-stealth
 python-docx
 jinja2
+requests
