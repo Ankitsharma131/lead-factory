@@ -2,8 +2,17 @@ name: Lead Factory Master Pipeline
 
 on:
   schedule:
-    - cron: '30 3 * * *'
+    - cron: '30 3 * * *' # Automated daily run
   workflow_dispatch:
+    inputs:
+      category:
+        description: 'Business Category (e.g., HR Consultancy)'
+        required: true
+        default: 'HR Consultancy'
+      city:
+        description: 'Target City (e.g., Delhi)'
+        required: true
+        default: 'Delhi'
 
 permissions:
   contents: write
@@ -30,8 +39,14 @@ jobs:
 
       - name: Phase 1 The Hunt
         env:
-          SEARCH_QUERY: "HR Consultancy in Kolkata"
-        run: python scraper.py
+          # Combines inputs for the scraper (e.g., "HR Consultancy in Delhi")
+          SEARCH_QUERY: "${{ github.event.inputs.category }} in ${{ github.event.inputs.city }}"
+        run: |
+          if [ -z "$SEARCH_QUERY" ] || [ "$SEARCH_QUERY" == " in " ]; then
+            export SEARCH_QUERY="HR Consultancy in Delhi"
+          fi
+          echo "Current Search: $SEARCH_QUERY"
+          python scraper.py
 
       - name: Phase 2 The Architect
         run: python architect.py
@@ -68,6 +83,6 @@ jobs:
           if [ -f leads.csv ]; then
             curl -s -F chat_id=$TG_CHAT_ID \
                  -F document=@leads.csv \
-                 -F caption="Master Leads Backup" \
+                 -F caption="📊 Lead Backup for ${{ github.event.inputs.city || 'Delhi' }}" \
                  https://api.telegram.org/bot$TG_BOT_TOKEN/sendDocument
           fi
